@@ -36,4 +36,5 @@ io.on("connection", (socket) => {
      });
 });
 
-http.listen(8080);
+let port = process.env.PORT || 4000;
+http.listen(port);
