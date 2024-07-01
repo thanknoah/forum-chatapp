@@ -2,7 +2,7 @@ var express = require("express");
 var app = express();
 var http = require('http').createServer(app);
 var io = require("socket.io")(http, {
-    cors: { origin: "*" }
+    cors: { origin: "https://thenoahdevs.com/forum/chat.html" }
 });
 
 let serverList = []
