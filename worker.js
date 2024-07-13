@@ -18,7 +18,7 @@ parentPort.on('message', (numMsg) => {
             for (let x = 0; x < y.length; x++) {
                 maps.delete(y[x]);
             }
-            for (let x = 0; x < numMsg[1]; x++) {
+            for (let x = 0; x < y.length; x++) {
                 maps.set(numMsg[1][x], 0)
             }
             parentPort.postMessage(map);
