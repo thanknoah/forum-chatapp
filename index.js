@@ -1,93 +1,102 @@
-var express = require("express");
-const { Worker, isMainThread, parentPort, workerData, postMessage } = require('worker_threads');
-var app = express();
-var http = require('http').createServer(app);
-var io = require("socket.io")(http, {
-    cors: { origin: "*" }
+// Imports
+const express = require("express");
+const HashMap = require('hashmap');
+const {
+	Worker,
+	isMainThread,
+	parentPort,
+	workerData,
+	postMessage
+} = require('worker_threads');
+const app = express();
+const http = require('http').createServer(app);
+const io = require("socket.io")(http, {
+	cors: {
+		origin: "*"
+	}
 });
 
-
 // Variable && Functions
-let amountOfMessage = [];
+let amountOfMessage = new HashMap();
 let serverList = [];
-let worker = new Worker('./worker.js', { workerData });
-const threads = new Set();;
+let worker = new Worker('./worker.js', {
+	workerData
+});
+const threads = new Set();
 
+worker.on("message", (newval) => {
+    amountOfMessage.copy(newval);
+});
 
-// Socket Connection Handler
 io.on("connection", (socket) => {
+    console.log(amountOfMessage);
+	socket.on("username", (user) => {
+		// Check Duplicate Browser
+		let username = user;
+		let browserSame = false
 
-     // Setting Username
-     socket.on("username", (user) => {
-         let username = user; 
-          
-         const returnUsername = () => {
-            return user;
-         }
+		serverList.forEach((user, x) => {
+			if (user == username) {
+				io.to(socket.id).emit('duplicateBrowse');
+				browserSame = true;
+			}
+		});
 
-         // Check Duplicate Browser
-         if (!serverList.find(returnUsername)) {
-            serverList.push(username);
-            amountOfMessage.push(0);
+        // Update server list && Start Rate Limiter
+		if (!browserSame) {
+            if (!amountOfMessage.get(username)) { amountOfMessage.set(username, 0) }; 
 
-            console.log(serverList);
+			serverList.push(username);
 
-            // Start Rate limiter
-            if (threads.size == 0) {
-              if (serverList.length >= 1) {
-                  worker.postMessage(amountOfMessage);
-                  threads.add(worker);
-              }
-            }
+			if (threads.size == 0) {
+				if (serverList.length >= 1) {
+					worker.postMessage([amountOfMessage, serverList, "startUp"]);
+					threads.add(worker);
+				}
+			}
 
-            io.emit("updateServerList", serverList);
-         } else {
-            io.to(socket.id).emit('duplicateBrowse');
-         }
+			io.emit("updateServerList", serverList);
+		}
 
-         // Event handlers
-         worker.on("message", e => {
-            amountOfMessage = e;
-         });
 
-         socket.on("message", (msg) => {
-            serverList.map((user) => {
-                if (user == username) {
-                   let x = serverList.indexOf(username);
-                   amountOfMessage[x] += 1;
+		// Handle message
+		socket.on("message", (msg) => {
+			serverList.map((user) => {
+				if (user == username) {
+					if (amountOfMessage.get(username) < 20) {
+                        let x = amountOfMessage.get(username);
+						io.emit("receieve-msg", msg, username);
+                        amountOfMessage.set(username, (x+1));
+					} else {
+						worker.postMessage([amountOfMessage, username, "setCoolDown"]);
+						io.to(socket.id).emit('blocked');
+					}
+				}
+			});
+		});
 
-                   if (amountOfMessage[x] < 20) {
-                      io.emit("receieve-msg", msg, username);
-                   } else {
-                      io.to(socket.id).emit('blocked');
-                   }
-                }
-            });
-         });
- 
-         socket.on("disconnect", () => {
-            serverList.map((user, x) => {
-                if (user == username) {
-                   const index = serverList.indexOf(username);
-                   if (index > -1) { 
-                       serverList.splice(index, 1);
-                       amountOfMessage.splice(index, 1);
+		// Handle client disconnecting
+		socket.on("disconnect", () => {
+			serverList.map((user, x) => {
+				if (user == username) {
+					const index = serverList.indexOf(username);
+					if (index > -1) {
+						serverList.splice(index, 1);
 
-                       if (serverList.length == 0) {
-                          for (worker in threads) {
-                              threads.delete(worker);
-                              console.log("Deleted Thread");
-                          }
-                       }
-                   }
-                }
-            });
+						if (serverList.length == 0) {
+							for (worker in threads) {
+								threads.delete(worker);
+							}
+						}
+					}
+				}
+			});
 
-            // Update Serverlist
-            console.log(serverList);
-            io.emit("updateServerList", serverList);
-         });
-     });
+			// Update Serverlist
+			console.log(serverList);
+			io.emit("updateServerList", serverList);
+		});
+	});
 });
 
 let port = process.env.PORT || 4000;
