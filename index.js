@@ -13,10 +13,14 @@ let serverList = [];
 let worker = new Worker('./worker.js', { workerData });
 const threads = new Set();;
 
+// Event handler
+worker.on("message", e => {
+    amountOfMessage = e;
+});
+
 
 // Socket Connection Handler
 io.on("connection", (socket) => {
-
      // Setting Username
      socket.on("username", (user) => {
          let username = user; 
@@ -26,29 +30,32 @@ io.on("connection", (socket) => {
          }
 
          // Check Duplicate Browser
-         if (!serverList.find(returnUsername)) {
+
+         let browserSame = false
+         serverList.forEach((user, x) => {
+             if (user == username) {
+                io.to(socket.id).emit('duplicateBrowse');
+                browserSame = true;
+             }
+         });
+
+         if (browserSame) {
             serverList.push(username);
             amountOfMessage.push(0);
-
-            console.log(serverList);
-
-            // Start Rate limiter
-            if (threads.size == 0) {
+ 
+             console.log(serverList);
+ 
+             // Start Rate limiter
+             if (threads.size == 0) {
                if (serverList.length >= 1) {
-                  worker.postMessage(amountOfMessage);
-                  threads.add(worker);
+                   worker.postMessage(amountOfMessage);
+                   threads.add(worker);
                }
-            }
-
-            io.emit("updateServerList", serverList);
-         } else {
-            io.to(socket.id).emit('duplicateBrowse');
+             }
+ 
+             io.emit("updateServerList", serverList);
          }
-
-         // Event handlers
-         worker.on("message", e => {
-            amountOfMessage = e;
-         });
+    
 
          socket.on("message", (msg) => {
             serverList.map((user) => {
