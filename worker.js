@@ -27,7 +27,7 @@ parentPort.on('message', (numMsg) => {
                 map.set(numMsg[1][x], 0);
             }
             parentPort.postMessage(map);
-        }, 30000);
+        }, 5000);
     }
 
     // Set Cooldown for client
@@ -40,6 +40,6 @@ parentPort.on('message', (numMsg) => {
             map.set(numMsg[1], 0);
             parentPort.postMessage(map);
             clearInterval(x);
-        }, 30000);
+        }, 10000);
     }
 });
