@@ -66,7 +66,7 @@ io.on("connection", (socket) => {
         socket.on("message", (msg) => {
             serverList.map((user) => {
                 if (user == username) {
-                    if (amountOfMessage.get(username) < 20) {
+                    if (amountOfMessage.get(username) < 15) {
 			  setTimeout(() => {
 			      let x = amountOfMessage.get(username);
 			      io.emit("receieve-msg", msg, username);
