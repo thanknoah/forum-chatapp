@@ -67,11 +67,11 @@ io.on("connection", (socket) => {
             serverList.map((user) => {
                 if (user == username) {
                     if (amountOfMessage.get(username) < 20) {
-						setTimeout(() => {
-							let x = amountOfMessage.get(username);
-							io.emit("receieve-msg", msg, username);
-							amountOfMessage.set(username, (x + 1));
-						}, 100);
+			  setTimeout(() => {
+			      let x = amountOfMessage.get(username);
+			      io.emit("receieve-msg", msg, username);
+			      amountOfMessage.set(username, (x + 1));
+			  }, 100);
                     } else {
                         worker.postMessage([amountOfMessage, username, "setCoolDown"]);
                         io.to(socket.id).emit('blocked');
