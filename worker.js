@@ -27,13 +27,14 @@ parentPort.on('message', (numMsg) => {
                 map.set(numMsg[1][x], 0);
             }
             parentPort.postMessage(map);
-        }, 5000);
+        }, 30000);
     }
 
     // Set Cooldown for client
     if (numMsg[2] == "setCoolDown") {
         let x = setInterval(() => {
-            map.set(numMsg[1], 24);
+            map.set(numMsg[1], 40);
+            parentPort.postMessage(map);
         }, 1000);
 
         setTimeout(() => {
