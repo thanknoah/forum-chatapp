@@ -68,12 +68,12 @@ io.on("connection", (socket) => {
                 if (user == username) {
                     if (amountOfMessage.get(username) < 15) {
 			  setTimeout(() => {
-			      let x = amountOfMessage.get(username);
-			      io.emit("receieve-msg", msg, username);
-			      amountOfMessage.set(username, (x + 1));
+				let x = amountOfMessage.get(username);
+				io.emit("receieve-msg", msg, username);
+				amountOfMessage.set(username, (x + 1));
 			  }, 100);
                     } else {
-                        worker.postMessage([amountOfMessage, username, "setCoolDown"]);
+                        if (amountOfMessage.get(username) != 40) {  worker.postMessage([amountOfMessage, username, "setCoolDown"]); }
                         io.to(socket.id).emit('blocked');
                     }
                 }
